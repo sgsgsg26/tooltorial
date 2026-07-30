@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI Vision 공구 자판기 - 스마트 공구 배출 및 상태 검사 시스템">
+    <title>AI Vision 공구 자판기</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+    <div class="header-left">
+        <div class="logo">🔧</div>
+        <div>
+            <h1>AI Vision 공구 자판기</h1>
+            <p>Smart Tool Vending Machine</p>
+        </div>
+    </div>
+    <div class="connection-status" id="connectionStatus">
+        <span class="dot"></span>
+        <span id="connectionText">아두이노 미연결</span>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="main-container">
+
+    <!-- Slot Selection -->
+    <div class="card">
+        <div class="card-title">
+            <span class="icon">📦</span>
+            슬롯 선택
+        </div>
+        <div class="slots-grid">
+            <button class="slot-btn" onclick="dispense('A')" id="slotA">
+                <span class="slot-letter">A</span>
+                <span class="slot-label">슬롯 1</span>
+            </button>
+            <button class="slot-btn" onclick="dispense('B')" id="slotB">
+                <span class="slot-letter">B</span>
+                <span class="slot-label">슬롯 2</span>
+            </button>
+            <button class="slot-btn" onclick="dispense('C')" id="slotC">
+                <span class="slot-letter">C</span>
+                <span class="slot-label">슬롯 3</span>
+            </button>
+            <button class="slot-btn" onclick="dispense('D')" id="slotD">
+                <span class="slot-letter">D</span>
+                <span class="slot-label">슬롯 4</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Arduino Connection -->
+    <div class="card">
+        <div class="card-title">
+            <span class="icon">⚙️</span>
+            장치 설정
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; gap: 8px;">
+                <select id="portSelect" style="flex:1; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 13px;">
+                    <option value="">포트 선택...</option>
+                </select>
+                <button class="ctrl-btn" onclick="refreshPorts()" title="포트 새로고침">🔄</button>
+            </div>
+            <button class="ctrl-btn primary" onclick="connectArduino()" style="width: 100%; justify-content: center;">
+                🔌 아두이노 연결
+            </button>
+            <div style="border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 4px;">
+                <button class="ctrl-btn" onclick="testCamera()" style="width: 100%; justify-content: center;">
+                    📷 카메라 테스트
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Section -->
+    <div class="card status-section">
+        <div class="card-title">
+            <span class="icon">📡</span>
+            작동 상태
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar" id="statusBar">
+            <div class="status-icon" id="statusIcon">⏸️</div>
+            <div class="status-text">
+                <div class="label">현재 상태</div>
+                <div class="message" id="statusMessage">대기 중</div>
+            </div>
+            <div class="spinner" id="spinner"></div>
+        </div>
+
+        <!-- Progress Steps -->
+        <div class="progress-steps">
+            <div class="progress-step">
+                <div class="step-dot" id="step1">1</div>
+                <div class="step-line" id="line1"></div>
+            </div>
+            <div class="progress-step">
+                <div class="step-dot" id="step2">2</div>
+                <div class="step-line" id="line2"></div>
+            </div>
+            <div class="progress-step">
+                <div class="step-dot" id="step3">3</div>
+                <div class="step-line" id="line3"></div>
+            </div>
+            <div class="progress-step">
+                <div class="step-dot" id="step4">4</div>
+                <div class="step-line" id="line4"></div>
+            </div>
+            <div class="progress-step">
+                <div class="step-dot" id="step5">5</div>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 8px 0; font-size: 10px; color: var(--text-muted);">
+            <span>이동</span><span>도착</span><span>배출</span><span>복귀</span><span>검사</span>
+        </div>
+    </div>
+
+    <!-- Detection Result -->
+    <div class="card detection-card" id="detectionCard">
+        <div class="card-title">
+            <span class="icon">🤖</span>
+            AI 검사 결과
+        </div>
+        <div class="detection-content">
+            <div class="detection-image-wrapper">
+                <img id="detectionImage" src="" alt="탐지 결과">
+            </div>
+            <div class="detection-info">
+                <div class="detection-badge" id="detectionBadge">
+                    <span class="badge-dot" id="badgeDot"></span>
+                    <span id="detectionLabel">-</span>
+                </div>
+                <div class="confidence-bar-wrapper">
+                    <div class="label">
+                        <span>신뢰도</span>
+                        <span id="confidenceValue">0%</span>
+                    </div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="detection-details" id="detectionDetails"></div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<!-- Socket.IO -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+    // ============================================================
+    // Socket.IO 연결
+    // ============================================================
+    const socket = io();
+
+    // ============================================================
+    // 상태 매핑
+    // ============================================================
+    const STATUS_MAP = {
+        idle:       { icon: '⏸️', step: 0 },
+        sent:       { icon: '📡', step: 0 },
+        moving:     { icon: '🔄', step: 1 },
+        arrived:    { icon: '📍', step: 2 },
+        pushing:    { icon: '📤', step: 3 },
+        returning:  { icon: '↩️', step: 4 },
+        done:       { icon: '✅', step: 4 },
+        inspecting: { icon: '🔍', step: 5 },
+        complete:   { icon: '🎉', step: 5 },
+        error:      { icon: '❌', step: 0 },
+        busy:       { icon: '⏳', step: 0 },
+    };
+
+    // ============================================================
+    // 배출 명령
+    // ============================================================
+    function dispense(slot) {
+        // 버튼 비활성화
+        document.querySelectorAll('.slot-btn').forEach(btn => btn.disabled = true);
+
+        // 결과 카드 숨기기
+        document.getElementById('detectionCard').classList.remove('visible');
+
+        // 프로그레스 리셋
+        resetProgress();
+
+        socket.emit('dispense', { slot: slot });
+    }
+
+    // ============================================================
+    // 상태 업데이트
+    // ============================================================
+    socket.on('status', function(data) {
+        const bar = document.getElementById('statusBar');
+        const icon = document.getElementById('statusIcon');
+        const msg = document.getElementById('statusMessage');
+        const spinner = document.getElementById('spinner');
+
+        const info = STATUS_MAP[data.state] || STATUS_MAP.idle;
+
+        // 상태바 업데이트
+        bar.className = 'status-bar ' + data.state;
+        icon.textContent = info.icon;
+        msg.textContent = data.message;
+
+        // 스피너
+        const isWorking = ['moving', 'pushing', 'returning', 'inspecting'].includes(data.state);
+        spinner.classList.toggle('visible', isWorking);
+
+        // 프로그레스 업데이트
+        updateProgress(info.step, data.state === 'complete');
+
+        // 완료 또는 에러 시 버튼 활성화
+        if (['complete', 'error'].includes(data.state)) {
+            document.querySelectorAll('.slot-btn').forEach(btn => btn.disabled = false);
+        }
+    });
+
+    // ============================================================
+    // 탐지 결과 표시
+    // ============================================================
+    socket.on('detection_result', function(data) {
+        const card = document.getElementById('detectionCard');
+        const img = document.getElementById('detectionImage');
+        const badge = document.getElementById('detectionBadge');
+        const dot = document.getElementById('badgeDot');
+        const label = document.getElementById('detectionLabel');
+        const confValue = document.getElementById('confidenceValue');
+        const confFill = document.getElementById('confidenceFill');
+        const details = document.getElementById('detectionDetails');
+
+        // 이미지 표시
+        img.src = 'data:image/jpeg;base64,' + data.image;
+
+        // 탐지 결과
+        if (data.detections && data.detections.length > 0) {
+            const det = data.detections[0];
+
+            badge.style.borderColor = det.color;
+            badge.style.background = det.color + '15';
+            dot.style.background = det.color;
+            label.textContent = det.label;
+
+            confValue.textContent = det.confidence + '%';
+            confFill.style.width = det.confidence + '%';
+            confFill.style.background = det.confidence > 80
+                ? 'linear-gradient(90deg, ' + det.color + ', ' + det.color + 'cc)'
+                : 'linear-gradient(90deg, var(--accent-yellow), var(--accent-red))';
+
+            // 상세 정보
+            let detailsHtml = '<strong>탐지 결과 상세</strong><br>';
+            data.detections.forEach((d, i) => {
+                detailsHtml += `• ${d.label}: ${d.confidence}%<br>`;
+            });
+            details.innerHTML = detailsHtml;
+        } else {
+            label.textContent = '탐지 없음';
+            dot.style.background = '#6b7280';
+            badge.style.borderColor = '#6b7280';
+            confValue.textContent = '0%';
+            confFill.style.width = '0%';
+            details.innerHTML = '탐지된 객체가 없습니다.';
+        }
+
+        // 카드 표시
+        card.classList.add('visible');
+    });
+
+    // ============================================================
+    // 프로그레스 관리
+    // ============================================================
+    function resetProgress() {
+        for (let i = 1; i <= 5; i++) {
+            document.getElementById('step' + i).className = 'step-dot';
+        }
+        for (let i = 1; i <= 4; i++) {
+            document.getElementById('line' + i).className = 'step-line';
+        }
+    }
+
+    function updateProgress(currentStep, isComplete) {
+        for (let i = 1; i <= 5; i++) {
+            const dot = document.getElementById('step' + i);
+            if (isComplete) {
+                dot.className = 'step-dot done';
+            } else if (i < currentStep) {
+                dot.className = 'step-dot done';
+            } else if (i === currentStep) {
+                dot.className = 'step-dot active';
+            } else {
+                dot.className = 'step-dot';
+            }
+        }
+        for (let i = 1; i <= 4; i++) {
+            const line = document.getElementById('line' + i);
+            if (isComplete) {
+                line.className = 'step-line done';
+            } else if (i < currentStep) {
+                line.className = 'step-line done';
+            } else if (i === currentStep) {
+                line.className = 'step-line active';
+            } else {
+                line.className = 'step-line';
+            }
+        }
+    }
+
+    // ============================================================
+    // 장치 설정
+    // ============================================================
+    function refreshPorts() {
+        fetch('/api/ports')
+            .then(r => r.json())
+            .then(data => {
+                const sel = document.getElementById('portSelect');
+                sel.innerHTML = '<option value="">포트 선택...</option>';
+                data.ports.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.device;
+                    opt.textContent = p.device + ' - ' + p.description;
+                    sel.appendChild(opt);
+                });
+
+                // 연결 상태 업데이트
+                const status = document.getElementById('connectionStatus');
+                const text = document.getElementById('connectionText');
+                if (data.connected) {
+                    status.classList.add('connected');
+                    text.textContent = '아두이노 연결됨';
+                } else {
+                    status.classList.remove('connected');
+                    text.textContent = '아두이노 미연결';
+                }
+            });
+    }
+
+    function connectArduino() {
+        const port = document.getElementById('portSelect').value;
+        fetch('/api/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ port: port || null })
+        })
+        .then(r => r.json())
+        .then(data => {
+            const status = document.getElementById('connectionStatus');
+            const text = document.getElementById('connectionText');
+            if (data.success) {
+                status.classList.add('connected');
+                text.textContent = '아두이노 연결됨 (' + data.port + ')';
+            } else {
+                status.classList.remove('connected');
+                text.textContent = '연결 실패';
+            }
+        });
+    }
+
+    function testCamera() {
+        socket.emit('test_detect');
+    }
+
+    // 페이지 로드 시 포트 목록 가져오기
+    window.addEventListener('load', refreshPorts);
+</script>
+
+</body>
+</html>
