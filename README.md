@@ -44,6 +44,17 @@ YOLOv26 비전 AI와 아두이노 하드웨어 제어를 결합하여, **불량 
 1. 하드웨어 전원을 켭니다. (파워서플라이 12V 3~5A 설정)[cite: 4]
 2. Arduino IDE를 이용해 `VendingMachineRFID/VendingMachineRFID.ino`를 업로드합니다[cite: 4].
 3. 웹캠을 연결하고 파이썬 가상환경에서 서버를 구동합니다.
+
+## 8. ⚖️ 외부 사용 내역 및 오픈소스 라이선스
+본 프로젝트는 대회 규정에 따라 아래의 외부 자원 및 오픈소스 생태계를 활용하여 개발되었음을 명시합니다.
+
+* **사용한 AI 모델**: Ultralytics YOLOv26 (AGPL-3.0 License)
+* **오픈소스 패키지**: 
+  * OpenCV: 실시간 웹캠 스트리밍 제어 (Apache 2.0 License)
+  * Flask: 파이썬 기반 웹 API 서버 구축 (BSD-3-Clause License)
+* **외부 서비스**: Roboflow (커스텀 데이터셋 호스팅 및 라벨링, CC BY 4.0 License)
+* **기타 에셋**: Google Fonts (Inter 폰트 적용, OFL)
+* **외부 자문 내역**: 해당 사항 없음 (팀 자체 개발)
    ```bash
    call yolo_env\Scripts\activate.bat
    python app.py
