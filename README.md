@@ -59,7 +59,7 @@ YOLOv26 비전 AI와 아두이노 하드웨어 제어를 결합하여, **불량 
   * Roboflow: 데이터셋 호스팅 및 라벨링 (CC BY 4.0 License)
 * **기타 에셋**: 
   * Google Fonts: Inter 폰트 적용 (OFL)
-* **외부 자문 내역**: 팀 자체 개발
+* **외부 자문 내역**: 본교 선생님들께(기계과,정보과) 제어와 프로그래밍에 관한 자문을 구함
    ```bash
    call yolo_env\Scripts\activate.bat
    python app.py
