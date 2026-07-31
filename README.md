@@ -44,10 +44,6 @@ YOLOv26 비전 AI와 아두이노 하드웨어 제어를 결합하여, **불량 
 1. 하드웨어 전원을 켭니다. (파워서플라이 12V 3~5A 설정)
 2. Arduino IDE를 이용해 `VendingMachineRFID/VendingMachineRFID.ino`를 업로드합니다
 3. 웹캠을 연결하고 파이썬 가상환경에서 서버를 구동합니다.
-```bash
-   call yolo_env\Scripts\activate.bat
-   python app.py
-.
 
 
 ## 8. ⚖️ 외부 사용 내역 및 오픈소스 라이선스
