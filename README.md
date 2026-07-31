@@ -47,7 +47,7 @@ YOLOv26 비전 AI와 아두이노 하드웨어 제어를 결합하여, **불량 
 ```bash
    call yolo_env\Scripts\activate.bat
    python app.py
-
+'''
 
 
 ## 8. ⚖️ 외부 사용 내역 및 오픈소스 라이선스
