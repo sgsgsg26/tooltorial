@@ -1,0 +1,742 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Vision 스마트 공구 자판기</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { 
+    background: #f4f7fa; 
+    min-height: 100vh; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    padding: 40px 20px;
+    color: #1a202c; 
+  }
+  
+  /* 메인 3단 레이아웃 */
+  .layout-container {
+    display: flex;
+    gap: 24px;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    align-items: stretch;
+  }
+  
+  .side-panel {
+    flex: 1;
+    min-width: 340px;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-direction: column;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  
+  .panel-title {
+    font-size: 18px; 
+    font-weight: 700;
+    color: #2b6cb0;
+    letter-spacing: 0.05em;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .screen {
+    width: 500px; 
+    flex-shrink: 0;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    font-family: 'Noto Sans KR', sans-serif;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 헤더 영역 */
+  .header { text-align: center; margin-bottom: 28px; }
+  .header-title { font-size: 16px; font-weight: 600; letter-spacing: 0.1em; color: #4a5568; text-transform: uppercase; margin-bottom: 8px; }
+  .header-main { font-size: 28px; font-weight: 800; color: #1a202c; }
+
+  /* 연결 바 */
+  .connect-bar { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 20px; }
+  .connect-dot { width: 12px; height: 12px; border-radius: 50%; transition: background .3s; }
+  .connect-dot.off { background: #e53e3e; box-shadow: 0 0 6px rgba(229,62,62,.4); }
+  .connect-dot.on { background: #38a169; box-shadow: 0 0 6px rgba(56,161,105,.5); }
+  .connect-btn { background: #f7fafc; border: 1px solid #cbd5e0; color: #4a5568; border-radius: 8px; padding: 10px 20px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
+  .connect-btn:hover { background: #edf2f7; border-color: #a0aec0; }
+  .connect-btn.connected { color: #276749; background: #f0fff4; border-color: #9ae6b4; }
+
+  /* 시스템 상태 바 */
+  .status-bar { display: flex; align-items: center; justify-content: space-between; background: #f7fafc; border-radius: 8px; padding: 14px 20px; margin-bottom: 24px; border: 1px solid #e2e8f0; }
+  .status-label { font-size: 16px; font-weight: 600; color: #4a5568; }
+  .status-value { font-size: 18px; font-weight: 700; color: #38a169; }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #38a169; display: inline-block; margin-right: 8px; }
+  
+  /* 층 선택 그리드 */
+  .floor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .floor-btn { background: #ffffff; border: 2px solid #e2e8f0; border-radius: 14px; padding: 26px 16px; cursor: pointer; text-align: center; transition: all 0.2s ease; user-select: none; position: relative; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+  .floor-btn:hover { border-color: #bee3f8; background: #ebf8ff; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(66, 153, 225, 0.1); }
+  .floor-btn:active, .floor-btn.active { transform: scale(0.97); border-color: #3182ce; background: #ebf8ff; }
+  .floor-btn.selected { border-color: #3182ce; background: #ebf8ff; box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2); }
+  .floor-btn.disabled { opacity: 0.5; pointer-events: none; background: #f7fafc; }
+  .floor-icon { font-size: 32px; margin-bottom: 10px; color: #3182ce; line-height: 1; }
+  .floor-number { font-size: 26px; font-weight: 800; color: #2d3748; margin-bottom: 6px; }
+  .floor-sub { font-size: 15px; color: #718096; font-weight: 600; }
+  .floor-badge { position: absolute; top: 12px; right: 12px; background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 6px; padding: 4px 10px; font-size: 14px; font-weight: 700; color: #2b6cb0; }
+  
+  /* 하단 컨트롤 영역 */
+  .action-area { background: #f7fafc; border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px; min-height: 100px; display: flex; align-items: center; justify-content: center; }
+  .action-idle { font-size: 18px; font-weight: 600; color: #4a5568; text-align: center; }
+  .action-idle.no-connect { color: #c53030; font-weight: 700; }
+  .action-selected { width: 100%; display: none; }
+  .action-selected.show { display: flex; flex-direction: column; gap: 16px; }
+  .confirm-label { font-size: 16px; font-weight: 600; color: #4a5568; text-align: center; }
+  .confirm-floor { font-size: 24px; font-weight: 800; color: #1a202c; text-align: center; }
+  .btn-row { display: flex; gap: 12px; }
+  .btn-cancel { flex: 1; background: #ffffff; border: 1px solid #cbd5e0; color: #4a5568; border-radius: 8px; padding: 14px; font-size: 18px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+  .btn-cancel:hover { background: #f7fafc; color: #1a202c; }
+  .btn-confirm { flex: 2; background: #3182ce; border: none; color: #ffffff; border-radius: 8px; padding: 14px; font-size: 18px; font-weight: 700; cursor: pointer; transition: background 0.15s; box-shadow: 0 4px 10px rgba(49, 130, 206, 0.2); }
+  .btn-confirm:hover { background: #2b6cb0; }
+  
+  /* 진행 상태 애니메이션 */
+  .dispatch-anim { display: none; text-align: center; padding: 6px 0; width: 100%; }
+  .dispatch-anim.show { display: block; }
+  .dispatch-text { font-size: 22px; color: #38a169; font-weight: 800; animation: pulse 1.2s ease-in-out infinite; }
+  .dispatch-sub { font-size: 16px; font-weight: 600; color: #4a5568; margin-top: 8px; }
+  
+  .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 16px; }
+  .progress-fill { height: 100%; background: #38a169; width: 0%; border-radius: 4px; transition: width 0.5s linear; }
+  
+  /* 로그 영역 */
+  .log-area { margin-top: auto; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; max-height: 140px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.8; color: #4a5568; }
+  .log-area::-webkit-scrollbar{width:6px}
+  .log-area::-webkit-scrollbar-thumb{background:#cbd5e0;border-radius:3px}
+  .log-send{color:#3182ce}
+  .log-recv{color:#38a169}
+  .log-sys{color:#d69e2e; font-weight: 600;}
+
+  /* 반출 기록 리스트 아이템 스타일 */
+  .checkout-item { background: #ffffff; border: 1px solid #edf2f7; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); animation: fadeIn 0.3s ease; }
+  .checkout-user { font-weight: 800; color: #2b6cb0; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  .checkout-detail { font-size: 13px; color: #4a5568; margin-left: 20px; font-weight: 600; }
+  .checkout-detail-highlight { color: #e53e3e; font-weight: 800; }
+
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+  /* 라이브 카메라 패널 스타일 (비율 고정) */
+  .live-camera-feed {
+    width: 100%;
+    aspect-ratio: 4 / 3; 
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .live-camera-feed img { width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+  /* AI 검사 결과 패널 스타일 */
+  .ai-result-content {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+  }
+  .ai-result-content.show {
+    display: flex;
+    animation: fadeUp .5s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .ai-inspecting { text-align: center; }
+  .ai-inspecting-text { font-size: 24px; color: #3182ce; animation: pulse 1.2s ease-in-out infinite; font-weight: 800; }
+  .ai-inspecting-sub { font-size: 18px; font-weight: 600; color: #718096; margin-top: 12px; }
+
+  .ai-body { display: none; flex-direction: column; gap: 20px; }
+  .ai-image { width: 100%; border-radius: 12px; overflow: hidden; background: #edf2f7; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  .ai-image img { width: 100%; display: block; object-fit: contain; }
+  
+  .ai-info { display: flex; flex-direction: column; gap: 16px; }
+  .ai-badge { display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 20px 24px; border-radius: 12px; font-size: 26px; font-weight: 800; border: 2px solid; background: #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+  .ai-badge-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
+  
+  .ai-conf { background: #f8fafc; border-radius: 10px; padding: 20px 24px; border: 1px solid #e2e8f0; }
+  .ai-conf-label { font-size: 16px; color: #4a5568; display: flex; justify-content: space-between; margin-bottom: 12px; font-weight: 700; }
+  .ai-conf-bar { height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; }
+  .ai-conf-fill { height: 100%; border-radius: 5px; width: 0%; transition: width 1s cubic-bezier(.4,0,.2,1); }
+
+  .ai-server-status { display: flex; align-items: center; justify-content: flex-end; gap: 8px; font-size: 15px; font-weight: 600; color: #718096; margin-top: 20px; }
+  .ai-server-dot { width: 12px; height: 12px; border-radius: 50%; background: #e53e3e; }
+  .ai-server-dot.on { background: #38a169; }
+
+  /* 잠금 화면 (사원증 태그 대기) */
+  .lock-screen {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(26, 32, 44, 0.95);
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    backdrop-filter: blur(8px);
+  }
+  .lock-screen.show { display: flex; animation: fadeIn 0.3s; }
+  .lock-icon { font-size: 80px; margin-bottom: 24px; animation: bounce 2s infinite; }
+  .lock-title { font-size: 36px; font-weight: 800; margin-bottom: 16px; }
+  .lock-sub { font-size: 20px; color: #a0aec0; }
+  .lock-user-img { width: 150px; height: 150px; border-radius: 50%; margin-top: 10px; margin-bottom: 10px; border: 5px solid #48bb78; display: none; object-fit: cover; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .lock-user { font-size: 28px; color: #48bb78; font-weight: 800; margin-top: 10px; display: none; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+</style>
+</head>
+<body>
+
+<div class="lock-screen" id="lockScreen">
+  <div class="lock-icon" id="lockIcon">💳</div>
+  <div class="lock-title" id="lockTitle">사원증을 태그해 주세요</div>
+  <div class="lock-sub" id="lockSub">RFID 센서에 카드를 대면 잠금이 해제됩니다.</div>
+  <img src="avatar.jpg" class="lock-user-img" id="lockUserImg">
+  <div class="lock-user" id="lockUser"></div>
+</div>
+
+<div class="layout-container">
+
+  <!-- 왼쪽: 라이브 카메라 및 반출 기록 -->
+  <div class="side-panel panel-left">
+    <div class="panel-title"><span style="color:#e53e3e; font-size: 18px;">●</span> 실시간 카메라</div>
+    <div class="live-camera-feed">
+      <img src="http://localhost:5000/video_feed" alt="카메라 연결 중..." onerror="this.alt='카메라 영상을 불러올 수 없습니다'">
+    </div>
+    
+    <!-- 반출 기록 섹션 -->
+    <div class="checkout-section" style="margin-top: 24px; display: flex; flex-direction: column; flex: 1;">
+      <div class="checkout-header" style="font-size: 16px; font-weight: 700; color: #2d3748; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <span>📋 금일 반출 기록</span>
+        <span class="checkout-date" id="checkoutDate" style="font-size: 13px; color: #718096; background: #edf2f7; padding: 4px 10px; border-radius: 12px; font-weight: 600;"></span>
+      </div>
+      <div class="checkout-list" id="checkoutList" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; flex: 1; min-height: 150px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+        <div id="checkoutEmpty" style="text-align: center; color: #a0aec0; font-size: 13px; margin-top: 20px;">
+          아직 오늘의 반출 기록이 없습니다.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 중앙: 메인 컨트롤 스크린 -->
+  <div class="screen" role="main" aria-label="공구 자판기 터치스크린 UI">
+    <div class="header">
+      <div class="header-title" style="letter-spacing: normal;">스마트 공장으로의 첫걸음, AI 비전으로 공구 파손을 자동 검사합니다.</div>
+      <div class="header-main">AI Vision 스마트 공구 자판기</div>
+    </div>
+
+    <div class="connect-bar">
+      <div class="connect-dot off" id="connectDot"></div>
+      <button class="connect-btn" id="connectBtn" onclick="toggleSerial()">아두이노 연결</button>
+    </div>
+
+    <div class="status-bar">
+      <span class="status-label">시스템 상태</span>
+      <span class="status-value" id="sysStatus"><span class="status-dot" style="background:#e53e3e"></span>미연결</span>
+    </div>
+
+    <div class="floor-grid">
+      <div class="floor-btn disabled" data-floor="1" data-cmd="A" data-label="16파이 엔드밀" onclick="selectFloor(this)">
+        <span class="floor-badge">F1</span>
+        <div class="floor-icon">&#9881;</div>
+        <div class="floor-number" style="font-size: 22px;">16파이 엔드밀</div>
+        <div class="floor-sub">1층</div>
+      </div>
+      <div class="floor-btn disabled" data-floor="2" data-cmd="B" data-label="14파이 엔드밀" onclick="selectFloor(this)">
+        <span class="floor-badge">F2</span>
+        <div class="floor-icon">&#9881;</div>
+        <div class="floor-number" style="font-size: 22px;">14파이 엔드밀</div>
+        <div class="floor-sub">2층</div>
+      </div>
+      <div class="floor-btn disabled" data-floor="3" data-cmd="C" data-label="12파이 엔드밀" onclick="selectFloor(this)">
+        <span class="floor-badge">F3</span>
+        <div class="floor-icon">&#9881;</div>
+        <div class="floor-number" style="font-size: 22px;">12파이 엔드밀</div>
+        <div class="floor-sub">3층</div>
+      </div>
+      <div class="floor-btn disabled" data-floor="4" data-cmd="D" data-label="선반 황삭 바이트" onclick="selectFloor(this)">
+        <span class="floor-badge">F4</span>
+        <div class="floor-icon">&#9881;</div>
+        <div class="floor-number" style="font-size: 22px;">선반 황삭 바이트</div>
+        <div class="floor-sub">4층</div>
+      </div>
+    </div>
+
+    <div class="action-area" id="actionArea">
+      <div class="action-idle no-connect" id="idleMsg">아두이노를 먼저 연결해 주세요</div>
+      <div class="action-selected" id="selectedPanel">
+        <div class="confirm-label">선택한 층</div>
+        <div class="confirm-floor" id="confirmFloor">-</div>
+        <div class="btn-row">
+          <button class="btn-cancel" onclick="cancelSelect()">취소</button>
+          <button class="btn-confirm" onclick="dispatchFloor()">배출 시작</button>
+        </div>
+      </div>
+      <div class="dispatch-anim" id="dispatchPanel">
+        <div class="dispatch-text" id="dispatchText">이동 중...</div>
+        <div class="dispatch-sub" id="dispatchSub">모터 구동 중</div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+    </div>
+
+    <!-- 로그 영역을 중앙 패널 아래쪽에 고정 -->
+    <div class="log-area" id="logArea" style="margin-top: 24px;"></div>
+  </div>
+
+  <!-- 오른쪽: AI 검사 결과 -->
+  <div class="side-panel panel-right">
+    <div class="panel-title">🤖 AI 공구 상태 검사</div>
+    
+    <div class="ai-result-content" id="aiResult">
+      <div class="ai-inspecting" id="aiInspecting" style="display:none">
+        <div class="ai-inspecting-text">🔍 AI 검사 진행 중...</div>
+        <div class="ai-inspecting-sub">카메라 캡처 및 모델 추론 중</div>
+      </div>
+      
+      <div class="ai-body" id="aiBody" style="display:none">
+        <div id="ogqStickerTop" style="text-align: center; height: 110px; margin-bottom: -15px; position: relative; z-index: 10; display: none;"></div>
+        <div class="ai-image"><img id="aiImage" src="" alt="검사 결과"></div>
+        <div class="ai-info">
+          <div class="ai-badge" id="aiBadge">
+            <span class="ai-badge-dot" id="aiBadgeDot"></span>
+            <span id="aiLabel">-</span>
+          </div>
+          <div class="ai-conf">
+            <div class="ai-conf-label">
+              <span>신뢰도</span>
+              <span id="aiConfValue">0%</span>
+            </div>
+            <div class="ai-conf-bar">
+              <div class="ai-conf-fill" id="aiConfFill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI 서버 상태를 우측 패널 하단에 고정 -->
+    <div class="ai-server-status">
+      <span class="ai-server-dot" id="aiServerDot"></span>
+      <span id="aiServerText">AI 서버 확인 중...</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let port=null,writer=null,reader=null,connected=false;
+let receivedBuffer='';
+let selectedBtn=null,selectedFloor=null,selectedCmd=null;
+let dispatching=false;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const d = document.getElementById('checkoutDate');
+  if(d) d.textContent = new Date().toLocaleDateString('ko-KR');
+});
+
+function addCheckoutLog(userName, toolName, count) {
+  const list = document.getElementById('checkoutList');
+  const empty = document.getElementById('checkoutEmpty');
+  if (empty) empty.style.display = 'none';
+
+  const time = new Date().toLocaleTimeString('ko-KR', { hour12: false });
+  const item = document.createElement('div');
+  item.className = 'checkout-item';
+  item.innerHTML = `
+    <div class="checkout-user">👤 ${userName} <span style="color:#a0aec0; font-weight:500; font-size:12px; margin-left:auto;">${time}</span></div>
+    <div class="checkout-detail">
+      · ${toolName} 반출 <span class="checkout-detail-highlight">${count}개</span>
+    </div>
+  `;
+  list.insertBefore(item, list.firstChild);
+}
+
+async function toggleSerial(){
+  if(connected){await disconnectSerial()}
+  else{await connectSerial()}
+}
+
+async function connectSerial(){
+  try{
+    if(!('serial' in navigator)){
+      addLog('Chrome 브라우저에서만 동작합니다','sys');return;
+    }
+    port=await navigator.serial.requestPort();
+    await port.open({baudRate:9600});
+    writer=port.writable.getWriter();
+    connected=true;
+    receivedBuffer='';
+    updateConnectUI(true);
+    addLog('연결 성공! 부팅 대기...','sys');
+    readLoop();
+  }catch(e){
+    if(e.name!=='NotFoundError')addLog('연결 실패: '+e.message,'sys');
+  }
+}
+
+async function readLoop(){
+  const dec=new TextDecoderStream();
+  port.readable.pipeTo(dec.writable);
+  reader=dec.readable.getReader();
+  try{
+    while(true){
+      const{value,done}=await reader.read();
+      if(done)break;
+      if(value){
+        receivedBuffer+=value;
+        let lines=receivedBuffer.split('\n');
+        receivedBuffer=lines.pop();
+        lines.forEach(l=>{
+          const t=l.trim();
+          if(t){
+            addLog(t,'recv');
+            handleArduinoMsg(t);
+          }
+        });
+      }
+    }
+  }catch(e){}
+}
+
+function handleArduinoMsg(msg){
+  if(msg.includes('READY')){
+    addLog('아두이노 준비 완료','sys');
+    document.getElementById('sysStatus').innerHTML='<span class="status-dot"></span>정상 가동 중';
+    
+    // 준비 완료 시 잠금 화면 띄우기
+    document.getElementById('lockScreen').classList.add('show');
+    document.getElementById('lockTitle').textContent = '사원증을 태그해 주세요';
+    document.getElementById('lockUser').style.display = 'none';
+    
+    enableFloors(false);
+    document.getElementById('idleMsg').textContent='아두이노 연결됨. 카드를 태그해 주세요.';
+    document.getElementById('idleMsg').className='action-idle';
+  }
+
+  // 카드 태그 처리
+  if(msg.startsWith('TAG:')){
+    const tagId = msg.split(':')[1].trim();
+    addLog('NAVER OGQ 마켓 사원 부기공 인증완료!', 'sys');
+    
+    document.getElementById('lockIcon').style.display = 'none';
+    document.getElementById('lockSub').style.display = 'none';
+    
+    document.getElementById('lockTitle').textContent = '인증 완료';
+    document.getElementById('lockTitle').style.color = '#48bb78';
+    
+    document.getElementById('lockUserImg').style.display = 'block';
+    
+    document.getElementById('lockUser').innerHTML = 'NAVER OGQ 마켓 사원 <span style="color:white;">부기공</span>';
+    document.getElementById('lockUser').style.display = 'block';
+    
+    // 5초 뒤에 잠금 화면 사라지게 함 (사진 감상 시간)
+    setTimeout(() => {
+      document.getElementById('lockScreen').classList.remove('show');
+      enableFloors(true);
+      document.getElementById('idleMsg').textContent='부기공님 환영합니다. 배출할 층을 선택해 주세요.';
+      document.getElementById('idleMsg').className='action-idle';
+    }, 5000);
+    
+    return; 
+  }
+
+  if(!dispatching)return;
+
+  const fill=document.getElementById('progressFill');
+  const txt=document.getElementById('dispatchText');
+  const sub=document.getElementById('dispatchSub');
+
+  if(msg.includes('STATUS:MOVING')){
+    txt.textContent=selectedFloor+' 이동 중...';
+    sub.textContent='수직 모터 구동 중';
+    fill.style.width='25%';
+  }
+  else if(msg.includes('STATUS:ARRIVED')){
+    txt.textContent=selectedFloor+' 도착!';
+    sub.textContent='배출 준비 중';
+    fill.style.width='50%';
+  }
+  else if(msg.includes('STATUS:PUSHING')){
+    txt.textContent='엔드밀 배출 중...';
+    sub.textContent='수평 모터 구동 중';
+    fill.style.width='65%';
+  }
+  else if(msg.includes('STATUS:RETURNING')){
+    txt.textContent='푸셔 복귀 중...';
+    sub.textContent='수평 모터 복귀';
+    fill.style.width='80%';
+  }
+  else if(msg.includes('STATUS:DONE')){
+    txt.textContent='배출 완료!';
+    txt.style.color='#38a169';
+    sub.textContent='AI 검사 시작...';
+    fill.style.width='100%';
+    
+    // 반출 기록 추가 로직
+    const toolName = selectedFloor ? selectedFloor : '공구';
+    const userName = 'NAVER OGQ 마켓 사원 부기공';
+    addCheckoutLog(userName, toolName, 1);
+
+    // YOLO 검사 시작
+    runAIDetection();
+  }
+}
+
+async function disconnectSerial(){
+  try{
+    if(reader){await reader.cancel();reader.releaseLock()}
+    if(writer){writer.releaseLock()}
+    if(port){await port.close()}
+    connected=false;
+    updateConnectUI(false);
+    enableFloors(false);
+    addLog('연결 해제','sys');
+  }catch(e){addLog('해제 오류','sys')}
+}
+
+function updateConnectUI(on){
+  document.getElementById('connectDot').className='connect-dot '+(on?'on':'off');
+  const btn=document.getElementById('connectBtn');
+  btn.textContent=on?'연결 해제':'아두이노 연결';
+  btn.className='connect-btn'+(on?' connected':'');
+  if(!on){
+    document.getElementById('sysStatus').innerHTML='<span class="status-dot" style="background:#e53e3e"></span>미연결';
+    document.getElementById('idleMsg').textContent='아두이노를 먼저 연결해 주세요';
+    document.getElementById('idleMsg').className='action-idle no-connect';
+  }
+}
+
+function enableFloors(on){
+  document.querySelectorAll('.floor-btn').forEach(b=>{
+    if(on)b.classList.remove('disabled');
+    else b.classList.add('disabled');
+  });
+}
+
+function selectFloor(btn){
+  if(dispatching||!connected)return;
+  if(selectedBtn)selectedBtn.classList.remove('selected');
+  selectedBtn=btn;
+  selectedFloor=btn.dataset.label;
+  selectedCmd=btn.dataset.cmd;
+  btn.classList.add('selected');
+  document.getElementById('idleMsg').style.display='none';
+  document.getElementById('selectedPanel').classList.add('show');
+  document.getElementById('dispatchPanel').classList.remove('show');
+  document.getElementById('confirmFloor').textContent=selectedFloor+' — '+btn.querySelector('.floor-sub').textContent+' 배출';
+}
+
+function cancelSelect(){
+  if(selectedBtn)selectedBtn.classList.remove('selected');
+  selectedBtn=null;selectedFloor=null;selectedCmd=null;
+  document.getElementById('idleMsg').style.display='';
+  document.getElementById('selectedPanel').classList.remove('show');
+}
+
+async function dispatchFloor(){
+  if(!selectedCmd||dispatching||!connected)return;
+  dispatching=true;
+
+  document.getElementById('selectedPanel').classList.remove('show');
+  const panel=document.getElementById('dispatchPanel');
+  panel.classList.add('show');
+  document.getElementById('dispatchText').style.color='#38a169';
+  document.getElementById('progressFill').style.width='5%';
+  document.getElementById('dispatchText').textContent='명령 전송 중...';
+  document.getElementById('dispatchSub').textContent='아두이노 통신 중';
+
+  enableFloors(false);
+
+  addLog('SEND: '+selectedCmd,'send');
+  await writer.write(new TextEncoder().encode(selectedCmd));
+}
+
+function resetDispatch(){
+  dispatching=false;
+  if(selectedBtn)selectedBtn.classList.remove('selected');
+  selectedBtn=null;selectedFloor=null;selectedCmd=null;
+  document.getElementById('progressFill').style.width='0%';
+  document.getElementById('idleMsg').style.display='';
+  document.getElementById('dispatchPanel').classList.remove('show');
+  enableFloors(true);
+}
+
+function addLog(msg,type){
+  const m=document.getElementById('logArea');
+  const t=new Date().toLocaleTimeString('ko-KR',{hour12:false});
+  const p={send:'→',recv:'←',sys:'●'}[type]||'·';
+  const d=document.createElement('div');
+  d.className='log-'+type;
+  d.textContent='['+t+'] '+p+' '+msg;
+  m.appendChild(d);
+  m.scrollTop=m.scrollHeight;
+}
+
+// ============================================================
+// AI 검사 (YOLO)
+// ============================================================
+const AI_SERVER = 'http://localhost:5000';
+
+async function runAIDetection(){
+  const panel = document.getElementById('aiResult');
+  const inspecting = document.getElementById('aiInspecting');
+  const body = document.getElementById('aiBody');
+
+  // 검사 중 표시
+  panel.classList.add('show');
+  inspecting.style.display = 'block';
+  body.style.display = 'none';
+  addLog('AI 검사 시작...','sys');
+
+  // 1초 대기 (공구 안정화)
+  await new Promise(r => setTimeout(r, 1000));
+
+  try {
+    const res = await fetch(AI_SERVER + '/api/detect?tool=' + encodeURIComponent(selectedFloor));
+    const data = await res.json();
+
+    if(data.success && data.detections.length > 0){
+      const det = data.detections[0];
+
+      // 이미지 표시
+      document.getElementById('aiImage').src = 'data:image/jpeg;base64,' + data.image;
+
+      // 배지 표시
+      const badge = document.getElementById('aiBadge');
+      const dot = document.getElementById('aiBadgeDot');
+      badge.style.borderColor = det.color;
+      
+      // 컬러에 맞춰 연한 배경색 만들기 (투명도)
+      badge.style.background = det.color + '18';
+      dot.style.background = det.color;
+      document.getElementById('aiLabel').textContent = det.emoji + ' ' + det.label;
+      document.getElementById('aiLabel').style.color = det.color;
+
+      // 신뢰도 바
+      document.getElementById('aiConfValue').textContent = det.confidence + '%';
+      const fill = document.getElementById('aiConfFill');
+      fill.style.background = det.color;
+      setTimeout(() => { fill.style.width = det.confidence + '%'; }, 100);
+
+      // 표시 전환
+      inspecting.style.display = 'none';
+      body.style.display = 'flex';
+
+      addLog('AI 결과: ' + det.label + ' (' + det.confidence + '%)','sys');
+    } else {
+      inspecting.querySelector('.ai-inspecting-text').textContent = '⚠️ 탐지 결과 없음';
+      inspecting.querySelector('.ai-inspecting-sub').textContent = data.message || '공구를 감지하지 못했습니다';
+      addLog('AI 탐지 실패','sys');
+    }
+  } catch(e) {
+    inspecting.querySelector('.ai-inspecting-text').textContent = '❌ AI 서버 연결 실패';
+    inspecting.querySelector('.ai-inspecting-sub').textContent = 'python app.py 서버를 실행해 주세요';
+    addLog('AI 서버 오류: ' + e.message,'sys');
+  }
+
+  // 20초 후 리셋 (자동 잠금 기능)
+  setTimeout(() => {
+    document.getElementById('aiConfFill').style.width = '0%';
+    panel.classList.remove('show');
+    resetDispatch();
+    
+    // 다음 사람을 위해 화면을 다시 잠금
+    if(connected) {
+      document.getElementById('lockScreen').classList.add('show');
+      
+      document.getElementById('lockIcon').style.display = 'block';
+      document.getElementById('lockSub').style.display = 'block';
+      document.getElementById('lockTitle').textContent = '사원증을 태그해 주세요';
+      document.getElementById('lockTitle').style.color = 'white';
+      
+      document.getElementById('lockUserImg').style.display = 'none';
+      document.getElementById('lockUser').style.display = 'none';
+      
+      enableFloors(false);
+      document.getElementById('idleMsg').textContent='아두이노 연결됨. 카드를 태그해 주세요.';
+      addLog('자동 잠금 활성화 (보안)','sys');
+    }
+  }, 20000);
+}
+
+// AI 서버 상태 확인
+async function checkAIServer(){
+  const dot = document.getElementById('aiServerDot');
+  const text = document.getElementById('aiServerText');
+  try {
+    const res = await fetch(AI_SERVER + '/api/health');
+    const data = await res.json();
+    if(data.status === 'ok' && data.model_loaded){
+      dot.classList.add('on');
+      text.textContent = 'AI 서버 연결됨';
+    } else {
+      dot.classList.remove('on');
+      text.textContent = 'AI 모델 미로드';
+    }
+  } catch(e) {
+    dot.classList.remove('on');
+    text.textContent = 'AI 서버 미연결';
+  }
+}
+
+// 30초마다 AI 서버 상태 확인
+checkAIServer();
+setInterval(checkAIServer, 30000);
+
+let ogqAllStickers = [];
+async function initOGQ() {
+  try {
+    const res = await fetch(AI_SERVER + '/api/ogq-stickers');
+    const data = await res.json();
+    if(data.success && data.urls.length > 0) {
+      ogqAllStickers = data.urls;
+      addLog("NAVER OGQ마켓 IP(스티커) 백엔드 연동 완료!", "sys");
+      // ★ 이미지 딜레이 방지: 미리 백그라운드에서 다운로드(캐싱) 해두기
+      ogqAllStickers.forEach(url => {
+        const img = new Image();
+        img.src = url;
+      });
+      if(document.getElementById('lockUserImg')) {
+        document.getElementById('lockUserImg').src = ogqAllStickers[0];
+        document.getElementById('lockUserImg').style.border = '5px solid #3182ce';
+        document.getElementById('lockUserImg').style.background = '#ffffff';
+        document.getElementById('lockUserImg').style.display = 'block';
+      }
+    } else {
+      addLog("OGQ 스티커가 부족합니다.", "sys");
+    }
+  } catch(e) {
+    addLog("OGQ 서버 연동 실패", "sys");
+  }
+}
+initOGQ();
+
+</script>
+</body>
+</html>
