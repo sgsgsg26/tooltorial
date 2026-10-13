@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 공구 자판기 - 관리자 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); }
+        .pulse-dot { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes slideIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+        .slide-in { animation: slideIn 0.4s ease-out; }
+        .gradient-header { background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); }
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        .kpi-card { transition: all 0.3s ease; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+<!-- 상단 헤더 -->
+<header class="gradient-header text-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-microchip text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">TOOL-TORIAL 관리자 대시보드</h1>
+                <p class="text-blue-300 text-sm">AI Vision 스마트 공구 자판기 실시간 모니터링</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2 text-base">
+                <span class="pulse-dot w-3 h-3 bg-green-400 rounded-full inline-block"></span>
+                <span class="text-green-300">실시간 연결됨</span>
+            </div>
+            <div class="text-base text-blue-200">
+                <i class="fa-regular fa-clock mr-1"></i>
+                <span id="currentTime"></span>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="max-w-7xl mx-auto px-6 py-6">
+
+    <!-- ===== 영역 1: 상단 KPI 카드 ===== -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+        <!-- 오늘 배출 건수 -->
+        <div class="kpi-card bg-white rounded-xl p-6 shadow-sm border-l-4 border-l-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">오늘 총 배출</p>
+                    <p class="text-4xl font-black text-gray-900 mt-1" id="kpiTodayTotal">-</p>
+                </div>
+                <div class="w-14 h-14 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-box-open text-blue-500 text-2xl"></i>
+                </div>
+            </div>
+            <p class="text-sm text-gray-400 mt-3"><i class="fa-solid fa-database mr-1"></i> 총 누적: <span id="kpiTotalEvents">0</span>건</p>
+        </div>
+        <!-- AI 정상 판독률 -->
+        <div class="kpi-card bg-white rounded-xl p-6 shadow-sm border-l-4 border-l-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">AI 판독 정상률</p>
+                    <p class="text-4xl font-black text-gray-900 mt-1" id="kpiGoodRate">-</p>
+                </div>
+                <div class="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-shield-check text-green-500 text-2xl"></i>
+                </div>
+            </div>
+            <p class="text-sm text-green-500 mt-3 font-medium"><i class="fa-solid fa-check-circle mr-1"></i> AI 모델 정상 작동 중</p>
+        </div>
+        <!-- 파손 감지 -->
+        <div class="kpi-card bg-white rounded-xl p-6 shadow-sm border-l-4 border-l-red-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">파손 의심 감지</p>
+                    <p class="text-4xl font-black text-gray-900 mt-1" id="kpiDamage">-</p>
+                </div>
+                <div class="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-triangle-exclamation text-red-500 text-2xl"></i>
+                </div>
+            </div>
+            <p class="text-sm text-red-400 mt-3"><i class="fa-solid fa-arrow-trend-down mr-1"></i> 누적 파손 의심 건수</p>
+        </div>
+        <!-- 재고 현황 -->
+        <div class="kpi-card bg-white rounded-xl p-6 shadow-sm border-l-4 border-l-amber-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">재고 현황</p>
+                    <div class="flex gap-2 mt-2" id="kpiStock">
+                        <span class="text-sm bg-gray-100 px-2 py-1 rounded">로딩중...</span>
+                    </div>
+                </div>
+                <div class="w-14 h-14 bg-amber-50 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-boxes-stacked text-amber-500 text-2xl"></i>
+                </div>
+            </div>
+            <button onclick="resetStock()" class="text-sm text-amber-600 mt-3 hover:underline font-medium">
+                <i class="fa-solid fa-rotate-right mr-1"></i> 재고 보충 (초기화)
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== 영역 2: 차트 섹션 ===== -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+        <!-- 공구 종류별 배출 비율 (도넛) -->
+        <div class="bg-white rounded-xl p-5 shadow-sm">
+            <h3 class="text-base font-bold text-gray-700 mb-4"><i class="fa-solid fa-chart-pie text-indigo-500 mr-2"></i>공구 종류별 배출 비율</h3>
+            <div class="relative" style="height:220px">
+                <canvas id="toolDistChart"></canvas>
+            </div>
+        </div>
+        <!-- 시간대별 사용량 (꺾은선) -->
+        <div class="bg-white rounded-xl p-5 shadow-sm">
+            <h3 class="text-base font-bold text-gray-700 mb-4"><i class="fa-solid fa-chart-line text-blue-500 mr-2"></i>시간대별 사용량</h3>
+            <div class="relative" style="height:220px">
+                <canvas id="hourlyChart"></canvas>
+            </div>
+        </div>
+        <!-- AI 판독 결과 분포 (파이) -->
+        <div class="bg-white rounded-xl p-5 shadow-sm">
+            <h3 class="text-base font-bold text-gray-700 mb-4"><i class="fa-solid fa-brain text-purple-500 mr-2"></i>AI 판독 결과 분포</h3>
+            <div class="relative" style="height:220px">
+                <canvas id="aiResultChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 영역 3 + 4 + 5: 하단 섹션 ===== -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        
+        <!-- 실시간 반출 기록 테이블 (2칸 차지) -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="text-base font-bold text-gray-700"><i class="fa-solid fa-list-timeline text-teal-500 mr-2"></i>실시간 공구 반출 기록</h3>
+                <div class="flex items-center gap-2">
+                    <span class="pulse-dot w-3 h-3 bg-red-500 rounded-full inline-block"></span>
+                    <span class="text-sm text-gray-400 font-bold">LIVE</span>
+                </div>
+            </div>
+            <div class="overflow-y-auto" style="max-height:420px">
+                <table class="w-full">
+                    <thead class="sticky top-0 bg-gray-50">
+                        <tr class="text-sm text-gray-400 uppercase tracking-wider">
+                            <th class="px-5 py-3 text-left">시간</th>
+                            <th class="px-5 py-3 text-left">사용자</th>
+                            <th class="px-5 py-3 text-left">이벤트</th>
+                            <th class="px-5 py-3 text-left">공구</th>
+                            <th class="px-5 py-3 text-left">상세</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTableBody" class="text-base text-gray-700">
+                        <tr><td class="px-5 py-4 text-gray-400 text-center" colspan="5">데이터를 불러오는 중...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 오른쪽 사이드 (AI 갤러리 + 알림) -->
+        <div class="space-y-5">
+            <!-- AI 최근 판독 갤러리 -->
+            <div class="bg-white rounded-xl p-5 shadow-sm">
+                <h3 class="text-base font-bold text-gray-700 mb-3"><i class="fa-solid fa-images text-pink-500 mr-2"></i>AI 최근 판독 이미지</h3>
+                <div class="grid grid-cols-2 gap-2" id="galleryGrid">
+                    <div class="col-span-2 text-center text-gray-400 text-sm py-8">
+                        <i class="fa-solid fa-camera text-2xl mb-2 block"></i>
+                        AI 판독 대기 중...
+                    </div>
+                </div>
+            </div>
+
+            <!-- 알림/경고 -->
+            <div class="bg-white rounded-xl p-5 shadow-sm">
+                <h3 class="text-base font-bold text-gray-700 mb-3"><i class="fa-solid fa-bell text-orange-500 mr-2"></i>시스템 알림</h3>
+                <div id="alertList" class="space-y-2">
+                    <div class="text-sm text-gray-400 text-center py-4">알림 로딩 중...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ========================================
+// 차트 인스턴스 (실시간 업데이트용)
+// ========================================
+let toolDistChart, hourlyChart, aiResultChart;
+
+function initCharts() {
+    // 공구 종류별 도넛 차트
+    toolDistChart = new Chart(document.getElementById('toolDistChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['16파이', '14파이', '12파이', '선반바이트'],
+            datasets: [{
+                data: [0, 0, 0, 0],
+                backgroundColor: ['#6366f1','#06b6d4','#10b981','#f59e0b'],
+                borderWidth: 0,
+                hoverOffset: 8
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+    });
+
+    // 시간대별 꺾은선 차트
+    hourlyChart = new Chart(document.getElementById('hourlyChart'), {
+        type: 'line',
+        data: {
+            labels: Array.from({length:24}, (_,i) => `${i}시`),
+            datasets: [{
+                label: '배출 건수',
+                data: new Array(24).fill(0),
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59,130,246,0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 2,
+                pointHoverRadius: 6
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+    });
+
+    // AI 결과 파이 차트
+    aiResultChart = new Chart(document.getElementById('aiResultChart'), {
+        type: 'pie',
+        data: {
+            labels: ['정상(Good)', '1날 파손', '2날 파손', '완전 파손'],
+            datasets: [{
+                data: [0, 0, 0, 0],
+                backgroundColor: ['#22c55e','#eab308','#f97316','#ef4444'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+    });
+}
+
+// ========================================
+// 이벤트 타입별 뱃지 색상
+// ========================================
+const eventBadge = {
+    '방문':   { bg: 'bg-blue-100',   text: 'text-blue-700' },
+    '시작':   { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+    '완료':   { bg: 'bg-green-100',  text: 'text-green-700' },
+    '재방문': { bg: 'bg-purple-100', text: 'text-purple-700' }
+};
+
+// ========================================
+// 대시보드 데이터 가져오기 (2초마다 자동 실행)
+// ========================================
+async function fetchDashboard() {
+    try {
+        const res = await fetch('/api/dashboard-stats');
+        const data = await res.json();
+
+        // KPI 카드 업데이트
+        document.getElementById('kpiTodayTotal').textContent = data.today_total + '건';
+        document.getElementById('kpiGoodRate').textContent = data.ai_good_rate + '%';
+        document.getElementById('kpiDamage').textContent = data.damage_count + '건';
+        document.getElementById('kpiTotalEvents').textContent = data.total_events;
+
+        // 재고 카드
+        const stockEl = document.getElementById('kpiStock');
+        const floorNames = {1:'16Ø', 2:'14Ø', 3:'12Ø', 4:'바이트'};
+        stockEl.innerHTML = Object.entries(data.stock).map(([f, qty]) => {
+            const color = qty <= 2 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700';
+            return `<span class="text-sm ${color} px-2 py-1 rounded font-bold">${floorNames[f]}:${qty}</span>`;
+        }).join('');
+
+        // 차트 업데이트
+        const toolLabels = Object.keys(data.tool_distribution);
+        const toolValues = Object.values(data.tool_distribution);
+        if (toolLabels.length > 0) {
+            toolDistChart.data.labels = toolLabels;
+            toolDistChart.data.datasets[0].data = toolValues;
+            toolDistChart.data.datasets[0].backgroundColor = ['#6366f1','#06b6d4','#10b981','#f59e0b'].slice(0, toolLabels.length);
+            toolDistChart.update('none');
+        }
+
+        hourlyChart.data.datasets[0].data = data.hourly_usage;
+        hourlyChart.update('none');
+
+        const ai = data.ai_results;
+        aiResultChart.data.datasets[0].data = [ai.Good || 0, ai['One Broken'] || 0, ai['Two Broken'] || 0, ai.Broken || 0];
+        aiResultChart.update('none');
+
+        // 로그 테이블 업데이트
+        const tbody = document.getElementById('logTableBody');
+        if (data.recent_logs.length === 0) {
+            tbody.innerHTML = '<tr><td class="px-5 py-8 text-gray-400 text-center" colspan="5"><i class="fa-solid fa-inbox text-2xl block mb-2"></i>아직 이벤트가 없습니다. 공구를 배출해 보세요!</td></tr>';
+        } else {
+            tbody.innerHTML = data.recent_logs.map(log => {
+                const badge = eventBadge[log.event_type] || { bg: 'bg-gray-100', text: 'text-gray-700' };
+                return `<tr class="hover:bg-gray-50 border-b border-gray-50 slide-in">
+                    <td class="px-5 py-3 text-sm text-gray-500 whitespace-nowrap">${log.timestamp || '-'}</td>
+                    <td class="px-5 py-3 font-bold whitespace-nowrap">${log.user_id || '-'}</td>
+                    <td class="px-5 py-3"><span class="px-3 py-1 ${badge.bg} ${badge.text} rounded-full text-sm font-bold">${log.event_type || '-'}</span></td>
+                    <td class="px-5 py-3 text-sm whitespace-nowrap">${log.tool_type || '-'}</td>
+                    <td class="px-5 py-3 text-sm text-gray-500">${log.detail || '-'}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // 알림 업데이트
+        const alertList = document.getElementById('alertList');
+        alertList.innerHTML = data.alerts.map(a => {
+            const colors = { warning: 'bg-amber-50 border-amber-200', danger: 'bg-red-50 border-red-200', success: 'bg-green-50 border-green-200' };
+            return `<div class="flex items-start gap-2 p-3 rounded-lg border ${colors[a.type] || 'bg-gray-50 border-gray-200'} slide-in">
+                <span class="text-lg">${a.icon}</span>
+                <p class="text-sm text-gray-700 leading-relaxed">${a.message}</p>
+            </div>`;
+        }).join('');
+
+    } catch (err) {
+        console.log('Dashboard fetch error:', err);
+    }
+}
+
+// ========================================
+// AI 판독 갤러리 가져오기 (5초마다)
+// ========================================
+async function fetchGallery() {
+    try {
+        const res = await fetch('/api/recent-detections');
+        const data = await res.json();
+        const grid = document.getElementById('galleryGrid');
+
+        if (data.images.length === 0) {
+            grid.innerHTML = '<div class="col-span-2 text-center text-gray-400 text-xs py-8"><i class="fa-solid fa-camera text-2xl mb-2 block"></i>AI 판독 대기 중...</div>';
+        } else {
+            grid.innerHTML = data.images.map(img =>
+                `<div class="rounded-lg overflow-hidden border border-gray-100 hover:shadow-md transition cursor-pointer" onclick="this.querySelector('img').requestFullscreen()">
+                    <img src="data:image/jpeg;base64,${img.image}" class="w-full h-24 object-cover" alt="${img.filename}">
+                </div>`
+            ).join('');
+        }
+    } catch (err) {
+        console.log('Gallery fetch error:', err);
+    }
+}
+
+// ========================================
+// 재고 초기화
+// ========================================
+async function resetLogs() {
+    if (!confirm('대시보드의 모든 로그와 그래프 데이터를 정말 초기화하시겠습니까?')) return;
+    await fetch('/api/logs/reset', { method: 'POST' });
+    fetchDashboard();
+    fetchGallery();
+}
+
+async function resetStock() {
+    if (!confirm('모든 층의 재고를 10개로 보충(초기화)하시겠습니까?')) return;
+    await fetch('/api/stock/reset', { method: 'POST' });
+    fetchDashboard();
+}
+
+// ========================================
+// 현재 시각 표시
+// ========================================
+function updateClock() {
+    const now = new Date();
+    document.getElementById('currentTime').textContent = 
+        now.toLocaleDateString('ko-KR') + ' ' + now.toLocaleTimeString('ko-KR');
+}
+
+// ========================================
+// 초기화 및 자동 갱신
+// ========================================
+window.addEventListener('DOMContentLoaded', () => {
+    initCharts();
+    fetchDashboard();
+    fetchGallery();
+    updateClock();
+
+    // 실시간 갱신 (2초마다 통계, 5초마다 갤러리, 1초마다 시계)
+    setInterval(fetchDashboard, 2000);
+    setInterval(fetchGallery, 5000);
+    setInterval(updateClock, 1000);
+});
+</script>
+</body>
+</html>
