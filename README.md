@@ -9,7 +9,6 @@
 
 🎬 **[5분 시연 및 발표 영상 보기 (YouTube)](https://www.youtube.com/watch?v=2LQ3BjfSXB4)**
 🎬 **[2차 데모데이 발표 영상 보기 (YouTube)](https://youtu.be/-GfRm83LN8M?si=pbl5BtV8U6xLZvxM)**
-📊 **[W8 최종 KPI 성과 리포트 전문 보기](./w8_kpi_report.md)**
 
 ---
 
