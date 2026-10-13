@@ -7,7 +7,8 @@
 🎮 **[100% 가상 체험 데모 웹사이트 접속하기](https://sgsgsg26.github.io/tooltorial-ui/)** 
 *(파이썬 서버나 아두이노 하드웨어 없이도 브라우저에서 바로 툴토리얼의 UI와 OGQ 스티커 연동을 체험해 보실 수 있습니다!)*
 
-🎬 **[5분 시연 및 발표 영상 보기 (YouTube)](https://www.youtube.com/watch?v=2LQ3BjfSXB4)**
+🎬 **[1차 데모데이 5분 시연 및 발표 영상 보기 (YouTube)](https://www.youtube.com/watch?v=2LQ3BjfSXB4)**
+🎬 **[2차 데모데이 발표 영상 보기 (YouTube)](https://youtu.be/-GfRm83LN8M?si=pbl5BtV8U6xLZvxM)**
 
 ## 1. 🚨 문제 정의 및 MVP 범위 (Problem & Scope)
 ### 1.1 문제 정의 (Mission)
