@@ -166,13 +166,14 @@ flowchart TD
 ---
 
 ## 9. ⚖️ 외부 사용 내역 및 오픈소스 라이선스
-본 프로젝트는 대회 규정을 철저히 준수하여 아래의 오픈소스 및 외부 자원을 명시합니다.
+본 프로젝트는 **GNU Affero General Public License v3.0 (AGPL-3.0)** 라이선스를 따르는 `Ultralytics YOLO`를 파인튜닝하여 사용함에 따라, AGPL-3.0의 Copyleft(동일 라이선스 적용 및 네트워크 서버 소스 코드 전체 공개) 의무를 준수하여 **저장소 전체 소스 코드, 학습 스크립트(`train_endmill.py`, `train_lathe.py`), 파인튜닝 모델 가중치(`runs/detect/`)를 모두 AGPL-3.0 라이선스 하에 공개**합니다. 상세 라이선스 전문은 루트 경로의 **[`LICENSE`](./LICENSE)** 파일에서 확인하실 수 있습니다.
 
-* **비전 AI 모델:** Ultralytics YOLOv26 (AGPL-3.0 License)
-* **오픈소스 라이브러리:** OpenCV (Apache 2.0), Flask (BSD-3-Clause), Chart.js (MIT)
-* **외부 서비스 연동:** NAVER OGQ Market API (디지털 에셋 연동), Roboflow (데이터 라벨링)
+* **프로젝트 전체 라이선스:** `GNU Affero General Public License v3.0 (AGPL-3.0)` ([`LICENSE`](./LICENSE) 참조)
+* **비전 AI 모델:** Ultralytics YOLOv26 (`AGPL-3.0 License` — 파인튜닝 스크립트 및 가중치 전체 공개 완료)
+* **오픈소스 라이브러리:** OpenCV (`Apache 2.0`), Flask (`BSD-3-Clause`), Chart.js (`MIT`), MFRC522 (`Unlicense`)
+* **외부 서비스 연동:** NAVER OGQ Market API (디지털 스티커 에셋 연동), Roboflow (데이터셋 라벨링)
 * **코드 생성 보조 AI:** Claude & Gemini (하드웨어 제어 알고리즘 및 웹 UI 로직 작성 보조)
-* **현장 인터뷰 및 자문:** 부산기계공업고등학교 기계과 실습 담당 교사 3분
+* **현장 인터뷰 및 자문:** 부산기계공업고등학교 기계과 실습 담당 교사 3분 (가공·기자재·실습장 담당)
 
 ---
 
